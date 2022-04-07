@@ -13,9 +13,11 @@ controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     )
 })
 sprites.onOverlap(SpriteKind.fire, SpriteKind.Enemy, function (sprite, otherSprite) {
-    otherSprite.vx += -100
-    otherSprite.vy += -100
+    otherSprite.vx += -30
+    otherSprite.vy += -30
     otherSprite.destroy(effects.fire, 1000)
+    item_pickup = sprites.create(assets.image`myImage4`, SpriteKind.Food)
+    item_pickup.setPosition(otherSprite.x, otherSprite.y)
     enemies_killed += 1
 })
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -81,9 +83,9 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
         inventory.removeAt(0)
         wackman.startEffect(effects.blizzard, 500)
     } else if (inventory[0] == 1) {
-        SeeingEye = sprites.create(assets.image`myImage2`, SpriteKind.misc)
-        SeeingEye.setVelocity(50, 50)
-        SeeingEye.setBounceOnWall(true)
+        item_pickup = sprites.create(assets.image`myImage2`, SpriteKind.misc)
+        item_pickup.setVelocity(50, 50)
+        item_pickup.setBounceOnWall(true)
     } else {
         inventory.removeAt(0)
     }
@@ -209,6 +211,12 @@ info.onLifeZero(function () {
     }
     game.over(false)
 })
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function (sprite, otherSprite) {
+    inventory.push(4)
+    otherSprite.destroy()
+    item1.setImage(item_sprite[inventory[0]])
+    item2.setImage(item_sprite[inventory[1]])
+})
 function new_room (EnemiesNum: number) {
     sprites.destroyAllSpritesOfKind(SpriteKind.Enemy)
     tiles.setCurrentTilemap(areas._pickRandom())
@@ -230,9 +238,11 @@ function new_room (EnemiesNum: number) {
     }
 }
 sprites.onOverlap(SpriteKind.misc, SpriteKind.Enemy, function (sprite, otherSprite) {
-    sprite.destroy()
     otherSprite.vx += -100
     otherSprite.vy += -100
+    if (Math.percentChance(25)) {
+        sprite.destroy()
+    }
 })
 scene.onOverlapTile(SpriteKind.Player, sprites.dungeon.stairLarge, function (sprite, location) {
     level += 1
@@ -254,10 +264,10 @@ let enemy1: Sprite = null
 let traps_hit = 0
 let level = 0
 let item_bonus = 0
-let SeeingEye: Sprite = null
 let ice: Sprite = null
 let fire: Sprite = null
 let enemies_killed = 0
+let item_pickup: Sprite = null
 let item_ID: number[] = []
 let item_sprite: Image[] = []
 let item2: Sprite = null
@@ -272,7 +282,9 @@ tilemap`room1`,
 tilemap`level3`,
 tilemap`die1`,
 tilemap`level4`,
-tilemap`level7`
+tilemap`level7`,
+tilemap`level10`,
+tilemap`level12`
 ]
 player_animations = [
 assets.animation`wacky boy forward`,
