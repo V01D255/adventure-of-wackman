@@ -2,6 +2,7 @@ namespace SpriteKind {
     export const GUI = SpriteKind.create()
     export const fire = SpriteKind.create()
     export const ice = SpriteKind.create()
+    export const misc = SpriteKind.create()
 }
 controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     animation.runImageAnimation(
@@ -11,13 +12,17 @@ controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     false
     )
 })
+sprites.onOverlap(SpriteKind.fire, SpriteKind.Enemy, function (sprite, otherSprite) {
+    otherSprite.vx += -100
+    otherSprite.vy += -100
+    otherSprite.destroy(effects.fire, 1000)
+    enemies_killed += 1
+})
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    wackman.sayText("failed 2")
-    if (inventory[0] == assets.image`myImage1`) {
-        speed += 15
+    if (inventory[0] == 5) {
+        speed += 25
         inventory.removeAt(0)
-        wackman.sayText("successful")
-    } else if (inventory[0] == assets.image`myImage0`) {
+    } else if (inventory[0] == 3) {
         wackman.startEffect(effects.fire, 1000)
         wackman.startEffect(effects.warmRadial, 2000)
         for (let index = 0; index < 10; index++) {
@@ -41,10 +46,12 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
                 `, wackman, randint(-30, 30), randint(-30, 30))
             fire.setKind(SpriteKind.fire)
         }
+        maxenem += 1
         inventory.removeAt(0)
-    } else if (inventory[0] == assets.image`myImage4`) {
+    } else if (inventory[0] == 4) {
         info.changeLifeBy(1)
-    } else if (inventory[0] == assets.image`myImage3`) {
+        inventory.removeAt(0)
+    } else if (inventory[0] == 0) {
         wackman.startEffect(effects.fountain, 1000)
         wackman.startEffect(effects.coolRadial, 2000)
         for (let index = 0; index < 10; index++) {
@@ -69,11 +76,18 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
             ice.setKind(SpriteKind.ice)
         }
         inventory.removeAt(0)
+    } else if (inventory[0] == 2) {
+        maxenem += -3
+        inventory.removeAt(0)
+        wackman.startEffect(effects.blizzard, 500)
+    } else if (inventory[0] == 1) {
+        SeeingEye = sprites.create(assets.image`myImage2`, SpriteKind.misc)
+        SeeingEye.setVelocity(50, 50)
+        SeeingEye.setBounceOnWall(true)
     } else {
-        wackman.setImage(inventory[0])
         inventory.removeAt(0)
     }
-    if (inventory == []) {
+    if (inventory.length == 0) {
         item1.setImage(img`
             . . . . . . . . . . . . . . . . 
             . . . . . . . . . . . . . . . . 
@@ -110,9 +124,28 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
             . . . . . . . . . . . . . . . . 
             . . . . . . . . . . . . . . . . 
             `)
+    } else if (inventory.length == 1) {
+        item2.setImage(img`
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            . . . . . . . . . . . . . . . . 
+            `)
     } else {
-        item1.setImage(inventory[0])
-        item2.setImage(inventory[1])
+        item1.setImage(item_sprite[inventory[0]])
+        item2.setImage(item_sprite[inventory[1]])
     }
 })
 controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -125,9 +158,9 @@ controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
 })
 scene.onOverlapTile(SpriteKind.Player, sprites.dungeon.chestClosed, function (sprite, location) {
     tiles.setTileAt(location, sprites.dungeon.floorLight0)
-    inventory.push(possible_items._pickRandom())
-    item1.setImage(inventory[0])
-    item2.setImage(inventory[1])
+    inventory.push(item_ID._pickRandom())
+    item1.setImage(item_sprite[inventory[0]])
+    item2.setImage(item_sprite[inventory[1]])
 })
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     animation.runImageAnimation(
@@ -137,6 +170,16 @@ controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     false
     )
 })
+sprites.onOverlap(SpriteKind.ice, SpriteKind.Enemy, function (sprite, otherSprite) {
+    otherSprite.setVelocity(0, 0)
+    pause(1000)
+    otherSprite.destroy(effects.fountain, 500)
+    enemies_killed += 1
+})
+sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Player, function (sprite, otherSprite) {
+    info.changeLifeBy(-1)
+    pause(1000)
+})
 controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
     animation.runImageAnimation(
     wackman,
@@ -145,13 +188,55 @@ controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
     false
     )
 })
-function new_room () {
+info.onLifeZero(function () {
+    let floor = 0
+    item_bonus = inventory.length * 10
+    game.splash("ITEM BONUS", item_bonus)
+    for (let index = 0; index < item_bonus; index++) {
+        info.changeScoreBy(1)
+    }
+    game.splash("FLOORS CLEARED", level)
+    for (let index = 0; index < floor * 10; index++) {
+        info.changeScoreBy(10)
+    }
+    game.splash("ENEMIES KILLED", enemies_killed)
+    for (let index = 0; index < enemies_killed * 2; index++) {
+        info.changeScoreBy(5)
+    }
+    game.splash("TRAPS HIT", traps_hit)
+    for (let index = 0; index < enemies_killed * 1; index++) {
+        info.changeScoreBy(-5)
+    }
+    game.over(false)
+})
+function new_room (EnemiesNum: number) {
+    sprites.destroyAllSpritesOfKind(SpriteKind.Enemy)
     tiles.setCurrentTilemap(areas._pickRandom())
     tiles.placeOnRandomTile(wackman, sprites.dungeon.collectibleInsignia)
+    for (let index = 0; index < EnemiesNum; index++) {
+        if (Math.percentChance(70)) {
+            enemy1 = sprites.create(assets.image`blorb`, SpriteKind.Enemy)
+            enemy1.setBounceOnWall(true)
+            enemy1.vx = randint(-50, 50)
+            enemy1.vy = randint(-50, 50)
+        } else {
+            enemy1 = sprites.create(assets.image`vexfly`, SpriteKind.Enemy)
+            enemy1.follow(wackman)
+            tiles.placeOnRandomTile(enemy1, assets.tile`enemy`)
+        }
+    }
+    for (let value of tiles.getTilesByType(assets.tile`enemy`)) {
+        tiles.setTileAt(value, sprites.dungeon.floorLight0)
+    }
 }
+sprites.onOverlap(SpriteKind.misc, SpriteKind.Enemy, function (sprite, otherSprite) {
+    sprite.destroy()
+    otherSprite.vx += -100
+    otherSprite.vy += -100
+})
 scene.onOverlapTile(SpriteKind.Player, sprites.dungeon.stairLarge, function (sprite, location) {
     level += 1
-    new_room()
+    new_room(randint(4, maxenem))
 })
 scene.onOverlapTile(SpriteKind.Player, sprites.dungeon.floorLight4, function (sprite, location) {
     if (Math.percentChance(30)) {
@@ -162,15 +247,24 @@ scene.onOverlapTile(SpriteKind.Player, sprites.dungeon.floorLight4, function (sp
         speed += -10
     }
     tiles.setTileAt(location, sprites.dungeon.floorLight3)
+    traps_hit += 1
+    maxenem += 1
 })
+let enemy1: Sprite = null
+let traps_hit = 0
 let level = 0
+let item_bonus = 0
+let SeeingEye: Sprite = null
 let ice: Sprite = null
 let fire: Sprite = null
-let possible_items: Image[] = []
+let enemies_killed = 0
+let item_ID: number[] = []
+let item_sprite: Image[] = []
 let item2: Sprite = null
 let item1: Sprite = null
+let maxenem = 0
 let wackman: Sprite = null
-let inventory: Image[] = []
+let inventory: number[] = []
 let player_animations: Image[][] = []
 let areas: tiles.TileMapData[] = []
 areas = [
@@ -188,13 +282,14 @@ assets.animation`wacky boy back`,
 assets.animation`the wacky thing`,
 assets.animation`wacky boy DEAD`
 ]
-inventory = [assets.image`myImage1`]
+inventory = [3]
 wackman = sprites.create(assets.image`wacky boy item`, SpriteKind.Player)
 let speed = 50
 controller.moveSprite(wackman, speed, speed)
 scene.cameraFollowSprite(wackman)
 info.setLife(3)
-new_room()
+new_room(5)
+maxenem = 6
 let inv1 = sprites.create(assets.image`inv1`, SpriteKind.GUI)
 let inv2 = sprites.create(assets.image`inv0`, SpriteKind.GUI)
 inv1.setFlag(SpriteFlag.RelativeToCamera, true)
@@ -241,12 +336,21 @@ item1.setPosition(7, 17)
 item1.setFlag(SpriteFlag.RelativeToCamera, true)
 item2.setPosition(18, 17)
 item2.setFlag(SpriteFlag.RelativeToCamera, true)
-possible_items = [
+item_sprite = [
 assets.image`myImage3`,
 assets.image`myImage2`,
 assets.image`shield`,
 assets.image`myImage0`,
-assets.image`myImage4`
+assets.image`myImage4`,
+assets.image`myImage1`
 ]
-item1.setImage(inventory[0])
-item2.setImage(inventory[1])
+item_ID = [
+0,
+1,
+2,
+3,
+4,
+5
+]
+item1.setImage(item_sprite[inventory[0]])
+item2.setImage(item_sprite[inventory[1]])
